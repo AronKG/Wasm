@@ -1,0 +1,335 @@
+#include <iostream>
+#include <cstring>
+#include <emscripten.h>
+#include <emscripten/bind.h>
+
+
+
+// Token types
+enum TokenType {
+    TOKEN_IDENTIFIER,
+    TOKEN_EQUALS,
+    TOKEN_AMPERSAND,
+    TOKEN_VERTICAL_BAR,
+    TOKEN_INTEGER,
+    TOKEN_END
+};
+
+// Token structure
+struct Token {
+    TokenType type;
+    const char* value;
+};
+
+// Abstract Syntax Tree Node
+struct ASTNode {
+    TokenType type;
+    char* value;
+    ASTNode *left;
+    ASTNode *right;
+};
+
+#define MAX_PAIRS 10  // Maximum number of key-value pairs 
+#define MAX_LENGTH 20 // Maximum length of key or value
+
+// Structure to store key-value pairs
+struct KeyValuePair {
+    char key[MAX_LENGTH];
+    char value[MAX_LENGTH];
+};
+
+// Structure to store dictionary
+struct Dictionary {
+    KeyValuePair pairs[MAX_PAIRS];
+    int count;
+};
+
+
+//Function prototypes
+Token getNextToken(const char *input, int *pos);
+Dictionary parseInput(char* PropertyValueSet, Dictionary* dict);
+ASTNode* parseEqualityExpression(Token token);
+ASTNode* parseAndExpression(Token token);
+ASTNode* parseOrExpression(Token token);
+ASTNode* parseExpression(char *input);
+bool evaluate(Dictionary* kv, ASTNode* root);
+void printAST(ASTNode *root, int indent);
+void freeAST(ASTNode *root, Dictionary* dict);
+void freeDictionary(Dictionary* dict);
+
+bool isValid(std::string PropertyValueSet, std::string PropertyFilter);
+
+// Retrieves the next token from the input string
+Token getNextToken(const char *input, int *pos) {
+    static char* current = nullptr;
+    if (input != nullptr)
+        current = (char*)input + *pos;
+    if (current == nullptr || *current == '\0')
+        return (Token) {TOKEN_END, nullptr};
+    while (*current == ' ' || *current == '\t' || *current == ';' || *current == ':' || *current == ',')
+        current++;
+    if (*current == '=') {
+        current++;
+        return (Token) {TOKEN_EQUALS, "="};
+    } else if (*current == '&') {
+        current++;
+        return (Token) {TOKEN_AMPERSAND, "&"};
+    } else if (*current == '|') {
+        current++;
+        return (Token) {TOKEN_VERTICAL_BAR, "|"};
+    } else if (*current >= '0' && *current <= '9') {
+        char value[20];
+        int i = 0;
+        while (*current >= '0' && *current <= '9') {
+            value[i++] = *current++;
+        }
+        value[i] = '\0';
+        return (Token) {TOKEN_INTEGER, strdup(value)};
+    } else if ((*current >= 'a' && *current <= 'z') || (*current >= 'A' && *current <= 'Z')) {
+        char value[20]; 
+        int i = 0;
+        while((*current >= 'a' && *current  <= 'z') || (*current >= 'A' && *current  <= 'Z')) {
+            value[i++] = *current++;
+        }
+        value[i] = '\0';
+        return (Token) {TOKEN_IDENTIFIER, strdup(value)};
+    }
+    return (Token) {TOKEN_END, nullptr};
+}
+
+// Function to parse input and extract key-value pairs
+Dictionary parseInput(const char* PropertyValueSet, Dictionary* dict) {
+    if(dict == nullptr || PropertyValueSet == nullptr){
+        std::cerr << "Error: either tree or property filter is empty\n";
+        exit(EXIT_FAILURE);
+    }
+    int pos = 0;
+    Token token = getNextToken(PropertyValueSet, &pos);
+
+    while (token.type != TOKEN_END) {
+        if (token.type != TOKEN_IDENTIFIER) {
+            std::cerr << "Error: Expected identifier first\n";
+            exit(EXIT_FAILURE);
+        }
+        const char* key = token.value;
+
+        token = getNextToken(nullptr, &pos);
+        if (token.type != TOKEN_EQUALS) {
+            std::cerr << "Error: Expected '=' token\n";
+            exit(EXIT_FAILURE);
+        }
+
+        token = getNextToken(nullptr, &pos);
+        if ( token.type != TOKEN_INTEGER) {
+            std::cerr << "Error: Expected value\n";
+            exit(EXIT_FAILURE);
+        }
+        const char* value = token.value;
+
+        if (dict->count < MAX_PAIRS) {
+            strcpy(dict->pairs[dict->count].key, key);
+            strcpy(dict->pairs[dict->count].value, value);
+            dict->count++;
+        } else {
+            std::cerr << "Error: Maximum number of key-value pairs exceeded\n";
+            exit(EXIT_FAILURE);
+        }
+
+        token = getNextToken(nullptr, &pos);
+    }
+
+    return *dict;
+}
+
+// Parses equality expressions (e.g., "a=1")
+ASTNode* parseEqualityExpression(Token token) {
+    ASTNode* node_id = new ASTNode;
+    node_id->type = TOKEN_IDENTIFIER;
+    if(token.type == TOKEN_END){
+        std::cerr << "Error: Invalid input\n";
+        exit(EXIT_FAILURE);
+    }
+    node_id->value = strdup(token.value); // Save the variable name
+    token = getNextToken(NULL, NULL); // Get next token
+    if (token.type != TOKEN_EQUALS) {
+        std::cerr << "Error: Expected '=' after identifier\n";
+        exit(EXIT_FAILURE);
+    }
+    ASTNode* node_eq = new ASTNode;
+    node_eq->type = TOKEN_EQUALS;
+    node_eq->value = strdup(token.value); // Save the '=' token
+    token = getNextToken(NULL, NULL); // Get next token
+    if (token.type != TOKEN_INTEGER) {
+        std::cerr << "Error: Expected integer value after '='\n";
+        exit(EXIT_FAILURE);
+    }
+    node_eq->left = node_id;
+    node_eq->right = new ASTNode;
+    node_eq->right->type = TOKEN_INTEGER;
+    node_eq->right->value = strdup(token.value);
+    node_id->left = nullptr;
+    node_id->right = nullptr;
+    return node_eq;
+}
+
+// Parses logical AND expressions (e.g., "a=1&b=2&c=3")
+ASTNode* parseAndExpression(Token token) {
+    ASTNode* left_node = parseEqualityExpression(token);
+    token = getNextToken(NULL, NULL); // Get next token
+    if (token.type == TOKEN_AMPERSAND) {
+        ASTNode* node_and = new ASTNode;
+        node_and->type = TOKEN_AMPERSAND;
+        node_and->value = strdup("&");
+        node_and->left = left_node;
+        node_and->right = parseAndExpression(getNextToken(NULL, NULL));
+        return node_and;
+    } else if (token.type == TOKEN_VERTICAL_BAR) {
+        ASTNode* node = new ASTNode;
+        node->type = TOKEN_VERTICAL_BAR;
+        node->value = strdup("|");
+        node->left = left_node;
+        node->right = parseOrExpression(getNextToken(NULL, NULL));
+        return node;
+    }else if(token.type == TOKEN_END){
+        return left_node;
+    }
+    else{
+        std::cerr << "Error: Expected '&' or '|' or end of expression\n";
+        exit(EXIT_FAILURE);
+    }
+}
+
+// Parses logical OR expressions (e.g., "a=1|b=2|c=3")
+ASTNode* parseOrExpression(Token token) {
+    ASTNode* left = parseAndExpression(token);
+   return left;
+}
+
+// Main parsing function
+ASTNode* parseExpression(const char *input) {
+    int pos = 0;
+    Token token = getNextToken(input, &pos);
+    if(token.type == TOKEN_END){
+        std::cerr << "Error: empty input\n";
+        exit(EXIT_FAILURE);
+    }
+    else if(token.type == TOKEN_EQUALS){
+        std::cerr << "Error: Expected identifier before '='\n";
+        exit(EXIT_FAILURE);
+    }
+    else
+        return parseOrExpression(token);
+}
+
+// Function to print AST (for debugging)
+void printAST(ASTNode *root, int level) {
+    if (root == nullptr) {
+        for (int i = 0; i < level; i++){
+            std::cout << "\t";
+        }
+        std::cout << "-----empty----\n";
+        return;
+    }
+
+    std::cout << std::string(level * 4, ' '); // Print indentation
+
+    switch (root->type) {
+        case TOKEN_INTEGER:
+        case TOKEN_IDENTIFIER:
+            std::cout << root->value << "\n";
+            break;
+        case TOKEN_EQUALS:
+            std::cout << "=\n";
+            break;
+        case TOKEN_AMPERSAND:
+            std::cout << "&\n";
+            break;
+        case TOKEN_VERTICAL_BAR:
+            std::cout << "|\n";
+            break;
+        case TOKEN_END:
+            std::cout << "-----end----\n";
+            break;
+        default:
+            std::cout << "-----unknown----\n";
+            break;
+    }
+
+    if (root->left != nullptr || root->right != nullptr) {
+        std::cout << std::string((level + 1) * 4, ' ') << "left\n";
+        printAST(root->left, level + 1);
+        std::cout << std::string((level + 1) * 4, ' ') << "right\n";
+        printAST(root->right, level + 1);
+    } else {
+        std::cout << std::string((level + 1) * 4, ' ') << "-----empty----\n";
+    }
+
+    std::cout << std::string(level * 4, ' ') << "done\n";
+}
+
+// Function to check if conditions are met 
+bool evaluate(Dictionary* kv, ASTNode* root) {
+    if (root == nullptr)
+        return false;
+
+    switch (root->type) {
+        case TOKEN_EQUALS: {
+            char* rootIdnti = root->left->value;
+            char* rootValue = root->right->value;
+            for (int i = 0; i < kv->count; i++) {
+                if (strcmp(kv->pairs[i].key, rootIdnti) == 0 && strcmp(kv->pairs[i].value, rootValue) == 0)
+                    return true;
+            }
+            break;
+        }
+        case TOKEN_AMPERSAND:
+            if (evaluate(kv, root->left) && evaluate(kv, root->right))
+                return true;
+            break;
+        case TOKEN_VERTICAL_BAR:
+            if (evaluate(kv, root->left) || evaluate(kv, root->right))
+                return true;
+            break;
+        default:
+            std::cerr << "Error: Invalid node type\n";
+            exit(EXIT_FAILURE);
+    }
+    
+    return false;
+}
+
+
+
+// Function to validate
+bool isValid(std::string propertyValueSet, std::string propertyFilter) {
+    const char *pvs = propertyValueSet.c_str();
+    const char *pf = propertyFilter.c_str();
+
+    // Check if this property filter is already in cahe and skip the parsing
+    // ast = Cache.get(propertyFilter)
+    // if(ast is missing) { ast = = parseExpression(propertyFilter)}
+    // Dictionary.set(propertyFilter, ast)
+    ASTNode* ast = parseExpression(pf);
+
+
+    Dictionary dict = {0}; // Initialize dictionary
+    Dictionary kv = parseInput(pvs, &dict);
+    bool result = evaluate(&kv, ast);
+    
+    //free memory
+    delete ast;
+    
+    return result;
+}
+
+
+
+
+// Binding code
+EMSCRIPTEN_BINDINGS(Module) {
+    // Binding functions with allow_raw_pointer for raw pointers
+    emscripten::function("isValid", &isValid);
+
+}
+
+

@@ -1,0 +1,29 @@
+{
+  "dependencies": {
+    "@promaster-sdk/property": "^7.0.0",
+    "wasi_snapshot_preview1": "^0.0.0-dev"
+  },
+  "scripts": {
+    "pm-sdk": "node pm-sdk/pm-sdk.mjs",
+
+    "compile1": "emcc lib/test1.c -o lib/test1.wasm --no-entry",
+
+    "start1": "node --experimental-wasm-modules lib/test1.mjs",
+
+    "compile3": "emcc lib3/example.cpp -o lib3/example.js -s WASM_ASYNC_COMPILATION=0 -std=c++11 --bind",
+    "start3": "node --experimental-wasm-modules lib3/consumer.mjs",
+
+    "compile4": "emcc property-filter-wasm/property-filter-wasm.cpp -o property-filter-wasm/property-filter-wasm.js -s WASM_ASYNC_COMPILATION=0 -std=c++11 --bind",
+    "start4": "node --experimental-wasm-modules property-filter-wasm/bench.mjs",
+    
+    "compare": "emcc compare/compare_strings.cpp -o compare/compare_strings.js -s WASM_ASYNC_COMPILATION=0 -std=c++11 --bind",
+    "startcompare": "node --experimental-wasm-modules compare/call_isValide.js",
+    "antlr4": "antlr4 -Dlanguage=Cpp SimpleGrammar.g4",
+    "antlr5": "java -jar //wsl.localhost/Ubuntu/usr/bin/antlr-4.9.2-complete.jar -Dlanguage=Cpp YourGrammar.g4",
+    "compilewasm": "xxd -g1 lib2/is_same.wasm",
+    "bench-test": "node bench-test/bench.mjs"
+  },
+  "devDependencies": {
+    "tinybench": "^2.7.0"
+  }
+}

@@ -1,0 +1,130 @@
+import Module from './concat.js';
+import { Bench } from 'tinybench';
+
+// Function to benchmark isValid function from Wasm file
+function benchmarkIsValid() {
+    const result1 = Module.isValid("pp=4", "GGG=3 | pp=4");
+    const result2 = Module.isValid("pp=4; abc= 34", "GGG=3 & pp=4");
+    const result3 = Module.isValid("a=1;b=2", "a=1,&b=3");
+    const result4 = Module.isValid("a=1;b=3", "a=1, &b=3");
+
+    // Log the results (you can modify this as per your requirement)
+    console.log("result1:", result1 === 1 ? "True" : "False");
+    console.log("result2:", result2 === 1 ? "True" : "False");
+    console.log("result3:", result3 === 1 ? "True" : "False");
+    console.log("result4:", result4 === 1 ? "True" : "False");
+}
+
+// Create a Bench instance
+const bench = new Bench({ time: 10 });
+
+// Add the benchmark function to the Bench instance
+bench.add('isValid Benchmark', benchmarkIsValid);
+
+// Run the benchmark
+await bench.run();
+
+// Display the benchmark results in a table
+console.table(bench.table());
+
+
+//##############################################################################################
+
+// //import a wasom file 
+// const Module = require('./concat.js');
+
+
+
+// // call isValid function from wasm file takes two strings and return 1 if the strings are valid and 0 if not
+// const result1 = Module.isValid("pp=4", "GGG=3 | pp=4");
+//  if (result1 == 1) {
+//     console.log("result1 is True");
+//  }
+//     else {
+//         console.log("False");
+//     }
+
+// // more tests 
+// const result2 = Module.isValid("pp=4; abc= 34", "GGG=3 & pp=4");
+//     if (result2 == 1) {
+//         console.log("resul2 is True");
+//     }
+//         else {
+//             console.log("resul2 is False");
+//         }   
+
+// const v1 = Module.isValid("a=1;b=2", "a=1,&b=3"); // false
+// if (v1 == 1) { 
+//     console.log("v1 is True");
+// }
+// else {
+//     console.log("v1 is False");
+// }
+
+
+// const v2 = Module.isValid("a=1;b=3", "a=1, &b=3"); // true
+// if (v2 == 1) { 
+//     console.log("v2 is True");
+// }
+// else {
+//     console.log("v2 is False");
+// }
+
+
+#############################################################################
+just a tabel result
+=========================
+import Module from './concat.js';
+import { Bench } from 'tinybench';
+
+// Function to benchmark isValid function from Wasm file for each test case
+async function benchmarkIsValid1() {
+    const result1 = await Module.isValid("pp=4", "GGG=3 | pp=4");
+    return result1 === 1; // Returns true if result1 is equal to 1, otherwise false
+}
+
+async function benchmarkIsValid2() {
+    const result2 = await Module.isValid("pp=4; abc= 34", "GGG=3 & pp=4");
+    return result2 === 1; // Returns true if result2 is equal to 1, otherwise false
+}
+
+async function benchmarkIsValid3() {
+    const result3 = await Module.isValid("a=1;b=2", "a=1,&b=3");
+    return result3 === 1; // Returns true if result3 is equal to 1, otherwise false
+}
+
+async function benchmarkIsValid4() {
+    const result4 = await Module.isValid("a=1;b=3", "a=1, &b=3");
+    return result4 === 1; // Returns true if result4 is equal to 1, otherwise false
+}
+
+// Create a Bench instance
+const bench = new Bench({ time: 10 });
+
+// Add the benchmark functions to the Bench instance
+bench.add('isValid1 Benchmark', benchmarkIsValid1);
+bench.add('isValid2 Benchmark', benchmarkIsValid2);
+bench.add('isValid3 Benchmark', benchmarkIsValid3);
+bench.add('isValid4 Benchmark', benchmarkIsValid4);
+
+// Run the benchmark
+await bench.run();
+
+// Get the individual benchmark results
+const results = bench.table();
+
+// Assign the result of each benchmark to a variable
+const result1 = results[0]['isValid1 Benchmark'];
+const result2 = results[1]['isValid2 Benchmark'];
+const result3 = results[2]['isValid3 Benchmark'];
+const result4 = results[3]['isValid4 Benchmark'];
+
+// Log the results
+console.log("result1 =", result1);
+console.log("result2 =", result2);
+console.log("result3 =", result3);
+console.log("result4 =", result4);
+
+// Display the benchmark results in a table
+console.table(results);
+

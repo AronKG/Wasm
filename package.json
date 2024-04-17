@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@promaster-sdk/property": "^7.0.0",
+    "wasi_snapshot_preview1": "^0.0.0-dev"
+  },
+  "devDependencies": {
+    "tinybench": "^2.7.0"
+  },
+  "scripts": {
+    "compile": "emcc src/pf-wasm.cpp -o src/pf-wasm.js -s WASM_ASYNC_COMPILATION=0 -std=c++11 --bind",
+    "start": "node --experimental-wasm-modules src/bench.mjs"
+  }
+}
