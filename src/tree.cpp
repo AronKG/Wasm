@@ -113,9 +113,10 @@ ASTNode* parseEqualityExpression(Token token) {
         std::cerr << "Error: Invalid input\n";
         exit(EXIT_FAILURE);
     }
-    printf("NEW allocate memory for the identifier \n");
+    printf("NEW new char[strlen(token.value) + 1] // allocate memory for the identifier \n");
     node_id->value = new char[strlen(token.value) + 1]; // allocate memory for the identifier 
     strcpy(node_id->value, token.value);
+    delete token.value;
     token = getNextToken(nullptr, nullptr); // Get next token
     if (token.type != TokenType::TOKEN_EQUALS) {
         std::cerr << "Error: Expected '=' after identifier\n";
@@ -124,9 +125,10 @@ ASTNode* parseEqualityExpression(Token token) {
     printf("NEW ASTNode\n");
     ASTNode* node_eq = new ASTNode();
     node_eq->type = TokenType::TOKEN_EQUALS;
-    printf("NEW // Save the '=' token\n");
+    printf("NEW new char[strlen(token.value) + 1] // Save the '=' token\n");
     node_eq->value = new char[strlen(token.value) + 1]; // Save the '=' token
     strcpy(node_eq->value, token.value);
+    delete token.value;
     token = getNextToken(nullptr, nullptr); // Get next token
     if (token.type != TokenType::TOKEN_INTEGER) {
         std::cerr << "Error: Expected integer value after '='\n";
@@ -139,6 +141,7 @@ ASTNode* parseEqualityExpression(Token token) {
     printf("NEW new char[strlen(token.value) + 1]\n");
     node_eq->right->value = new char[strlen(token.value) + 1]; 
     strcpy(node_eq->right->value, token.value);
+    delete token.value;
     node_id->left = nullptr;
     node_id->right = nullptr;
     return node_eq;
@@ -157,8 +160,8 @@ ASTNode* parseAndExpression(Token token) {
         strcpy(node_and->value, "&");
         node_and->left = left_node;
         node_and->right = parseAndExpression(getNextToken(nullptr, nullptr));
-        printf("DELETE delete[] token.value\n");
-        delete[] token.value;
+        // printf("DELETE delete[] token.value\n");
+        // delete[] token.value;
         return node_and;
     } else if (token.type == TokenType::TOKEN_VERTICAL_BAR) {
         printf("NEW ASTNode\n");
@@ -214,7 +217,7 @@ Token getNextToken(char *input, int *pos) {
             value[i++] = *current++;
         }
         value[i] = '\0';
-        printf("NEW new char[i + 1]\n");
+        printf("NEW new char[i + 1] // Allocate memory for the integer value\n");
         char* intValue = new char[i + 1]; // Allocate memory for the integer value
         strcpy(intValue, value);
         //delete[] value;
@@ -226,7 +229,7 @@ Token getNextToken(char *input, int *pos) {
             value[i++] = *current++;
         }
         value[i] = '\0';
-        printf("NEW new char[i + 1]\n");
+        printf("NEW new char[i + 1] // Allocate memory for the identifier value\n");
         char* identifierValue = new char[i + 1]; // Allocate memory for the identifier value
         strcpy(identifierValue, value);
         return {TokenType::TOKEN_IDENTIFIER, identifierValue};
@@ -509,7 +512,7 @@ void freeAST(ASTNode *root) {
     }
 
     // delete[] root->value; // Delete value memory
-    printf("DELETE delete root\n");
+    printf("DELETE delete root ASTNode\n");
      delete root;
 }
 
