@@ -6,10 +6,10 @@ echo COMPILE
 rm tree
 g++ -o tree tree.cpp
 
-echo RUN
+# echo RUN
 
 # Run the compiled program
-./tree
+# ./tree
 
 echo VALGRIND
 
