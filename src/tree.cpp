@@ -113,6 +113,7 @@ ASTNode* parseEqualityExpression(Token token) {
     }
     node_id->value = new char[strlen(token.value) + 1]; // allocate memory for the identifier 
     strcpy(node_id->value, token.value);
+    delete token.value;
     token = getNextToken(nullptr, nullptr); // Get next token
     if (token.type != TokenType::TOKEN_EQUALS) {
         std::cerr << "Error: Expected '=' after identifier\n";
@@ -122,6 +123,7 @@ ASTNode* parseEqualityExpression(Token token) {
     node_eq->type = TokenType::TOKEN_EQUALS;
     node_eq->value = new char[strlen(token.value) + 1]; // Save the '=' token
     strcpy(node_eq->value, token.value);
+    delete token.value;
     token = getNextToken(nullptr, nullptr); // Get next token
     if (token.type != TokenType::TOKEN_INTEGER) {
         std::cerr << "Error: Expected integer value after '='\n";
@@ -132,6 +134,7 @@ ASTNode* parseEqualityExpression(Token token) {
     node_eq->right->type = TokenType::TOKEN_INTEGER;
     node_eq->right->value = new char[strlen(token.value) + 1]; 
     strcpy(node_eq->right->value, token.value);
+    delete token.value;
     node_id->left = nullptr;
     node_id->right = nullptr;
     return node_eq;
