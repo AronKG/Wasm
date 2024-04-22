@@ -100,7 +100,8 @@ ASTNode* parseExpression(char *input) {
         exit(EXIT_FAILURE);
     }
     else
-        return parseOrExpression(token);
+        // return parseOrExpression(token);
+        return NULL;
 }
 
 // Parses equality expressions (e.g., "a=1")
@@ -176,13 +177,17 @@ ASTNode* parseOrExpression(Token token) {
 
 // Retrieves the next token from the input string
 Token getNextToken(char *input, int *pos) {
-    static char* current = nullptr;
+         printf("HELLO1");
+   static char* current = nullptr;
     if (input != nullptr)
         current = input + *pos;
     if (current == nullptr || *current == '\0')
         return {TokenType::TOKEN_END, nullptr};
     while (*current == ' ' || *current == '\t' || *current == ';' || *current == ':' || *current == ',')
         current++;
+                 
+                 printf("\n%x\n", *current);
+
     if (*current == '=') {
         current++;
         return {TokenType::TOKEN_EQUALS, "="};
@@ -202,15 +207,18 @@ Token getNextToken(char *input, int *pos) {
         char* intValue = new char[i + 1]; // Allocate memory for the integer value
         strcpy(intValue, value);
         //delete[] value;
-        return {TokenType::TOKEN_INTEGER, intValue};    } 
-        else if ((*current >= 'a' && *current <= 'z') || (*current >= 'A' && *current <= 'Z')) {
+        return {TokenType::TOKEN_INTEGER, intValue};    
+    } else if ((*current >= 'a' && *current <= 'z') || (*current >= 'A' && *current <= 'Z')) {
+        printf("OLLE!!!");
         char value[20]; 
         int i = 0;
         while((*current >= 'a' && *current  <= 'z') || (*current >= 'A' && *current  <= 'Z')) {
             value[i++] = *current++;
         }
         value[i] = '\0';
+        printf("OLLE222!!!\n %d\n", i);
         char* identifierValue = new char[i + 1]; // Allocate memory for the identifier value
+        printf("OLLE333!!!");
         strcpy(identifierValue, value);
         return {TokenType::TOKEN_IDENTIFIER, identifierValue};
     }
@@ -366,10 +374,10 @@ void addToCache(const std::string& PropertyFilter, ASTNode* ast) {
 
 // Free the memory associated with the dictionary
 void freeDict(Dictionary* dict) {
-    for (int i = 0; i < dict->count; ++i) {
-        delete[] dict->pairs[i].key;
-        delete[] dict->pairs[i].value;
-    }
+    // for (int i = 0; i < dict->count; ++i) {
+    //     delete[] dict->pairs[i].key;
+    //     delete[] dict->pairs[i].value;
+    // }
     // Reset the count to 0
     dict->count = 0;
 }
@@ -380,29 +388,29 @@ void freeDict(Dictionary* dict) {
 ValidationResult isValid(char* PropertyValueSet, char* PropertyFilter) {
     ValidationResult result; 
     std::string filterKey(PropertyFilter); // Convert char* to std::string
-    ASTNode* cachedAST = getASTFromCache(filterKey);
+    // ASTNode* cachedAST = getASTFromCache(filterKey);
 
-    if (cachedAST != nullptr) {
-        std::cout << "AST found in cache\n";
-        result.ast = cachedAST;
-    }
-    else {
-        std::cout << "AST not found in cache\n";
+    // if (cachedAST != nullptr) {
+    //     std::cout << "AST found in cache\n";
+    //     result.ast = cachedAST;
+    // }
+    // else {
+    //     std::cout << "AST not found in cache\n";
         ASTNode* ast = parseExpression(PropertyFilter);
         result.ast = ast;
-        addToCache(filterKey, ast);
-    }
-    printAST(result.ast, 0);
-    Dictionary dict = {};
-    Dictionary kv = parseInput(PropertyValueSet, &dict);
+    //     addToCache(filterKey, ast);
+    // }
+    // printAST(result.ast, 0);
+    // Dictionary dict = {};
+    // Dictionary kv = parseInput(PropertyValueSet, &dict);
 
-    result.result = evaluate(&kv, result.ast);
-    result.kv = kv;
+    // result.result = evaluate(&kv, result.ast);
+    // result.kv = kv;
 
     // free memmory 
     freeAST(result.ast);
     //printAST(result.ast, 0);
-   freeDict(&kv);
+//    freeDict(&kv);
    //delete[] result.ast->value;
 
    
@@ -498,8 +506,13 @@ void freeAST(ASTNode *root) {
 
 int main() {
     char PropertyFilter[] = "GGG=3 | pp=4";
+    ASTNode* ast = parseExpression(PropertyFilter);
+    freeAST(ast);
+    return 0;
+
+/*
     char PropertyValueSet[] = "GGG=9 : abc=4 : pp=4 : xyz=5";
-int i;
+    int i;
     for ( i = 0; i < 1; ++i) {
         ValidationResult VlidResult = isValid(PropertyValueSet, PropertyFilter);
         std::cout << "Run " << i + 1 << " - Result is: " << VlidResult.result << std::endl;
@@ -513,4 +526,5 @@ int i;
     freeASTCache(); 
 
     return 0;
+    */
 }
