@@ -25,7 +25,7 @@ struct Token {
 // Abstract Syntax Tree Node
 struct ASTNode {
     TokenType type;
-    char* value;
+    const char* value;
     ASTNode *left;
     ASTNode *right;
 };
@@ -37,7 +37,7 @@ struct ASTNode {
 // int cacheIndex = 0;
 
 #define MAX_PAIRS 10  // Maximum number of key-value pairs 
-#define MAX_LENGTH 20 // Maximum length of key or value
+#define MAX_LENGTH 10 // Maximum length of key or value
 
 // Structure to store key-value pairs
 struct KeyValuePair {
@@ -72,7 +72,6 @@ void freeAST(ASTNode *root);
 ASTNode* getASTFromCache(char* PropertyFilter);
 void addToCache(char* PropertyFilter, ASTNode* ast);
 void freeASTCache();
-void freeDict(Dictionary* dict);
 ValidationResult isValidUncached(char* PropertyValueSet, char* PropertyFilter);
 
 // Free the memory associated with the AST cache
@@ -111,8 +110,8 @@ ASTNode* parseEqualityExpression(Token token) {
         std::cerr << "Error: Invalid input\n";
         exit(EXIT_FAILURE);
     }
-    node_id->value = new char[strlen(token.value) + 1]; // allocate memory for the identifier 
-    strcpy(node_id->value, token.value);
+    node_id->value = token.value; //new char[strlen(token.value) + 1]; // allocate memory for the identifier 
+    //strcpy(node_id->value, token.value);
     token = getNextToken(nullptr, nullptr); // Get next token
     if (token.type != TokenType::TOKEN_EQUALS) {
         std::cerr << "Error: Expected '=' after identifier\n";
@@ -120,8 +119,8 @@ ASTNode* parseEqualityExpression(Token token) {
     }
     ASTNode* node_eq = new ASTNode();
     node_eq->type = TokenType::TOKEN_EQUALS;
-    node_eq->value = new char[strlen(token.value) + 1]; // Save the '=' token
-    strcpy(node_eq->value, token.value);
+    node_eq->value = token.value; //new char[strlen(token.value) + 1]; // Save the '=' token
+   // strcpy(node_eq->value, token.value);
     token = getNextToken(nullptr, nullptr); // Get next token
     if (token.type != TokenType::TOKEN_INTEGER) {
         std::cerr << "Error: Expected integer value after '='\n";
@@ -130,8 +129,8 @@ ASTNode* parseEqualityExpression(Token token) {
     node_eq->left = node_id;
     node_eq->right = new ASTNode();
     node_eq->right->type = TokenType::TOKEN_INTEGER;
-    node_eq->right->value = new char[strlen(token.value) + 1]; 
-    strcpy(node_eq->right->value, token.value);
+    node_eq->right->value = token.value;//new char[strlen(token.value) + 1]; 
+   // strcpy(node_eq->right->value, token.value);
     node_id->left = nullptr;
     node_id->right = nullptr;
     return node_eq;
@@ -144,23 +143,23 @@ ASTNode* parseAndExpression(Token token) {
     if (token.type == TokenType::TOKEN_AMPERSAND) {
         ASTNode* node_and = new ASTNode();
         node_and->type = TokenType::TOKEN_AMPERSAND;
-        node_and->value = new char[2]; // Allocate memory for the "&" character and null terminator
-        strcpy(node_and->value, "&");
+        node_and->value = token.value; //new char[2]; // Allocate memory for the "&" character and null terminator
+        //strcpy(node_and->value, "&");
         node_and->left = left_node;
         node_and->right = parseAndExpression(getNextToken(nullptr, nullptr));
-        delete[] token.value;
+        // delete[] token.value;
         return node_and;
     } else if (token.type == TokenType::TOKEN_VERTICAL_BAR) {
         ASTNode* node = new ASTNode();
         node->type = TokenType::TOKEN_VERTICAL_BAR;
-        node->value = new char[2]; // Allocate memory for the "|" character and null terminator
-        strcpy(node->value, "|");
+        node->value = token.value; //new char[2]; // Allocate memory for the "|" character and null terminator
+        //strcpy(node->value, "|");
         node->left = left_node;
         node->right = parseOrExpression(getNextToken(nullptr, nullptr));
         //delete[] token.value;   
         return node;
     }else if(token.type == TokenType::TOKEN_END){
-        delete[] token.value;
+        // delete[] token.value;
         return left_node;
     }
     else{
@@ -201,7 +200,7 @@ Token getNextToken(char *input, int *pos) {
         value[i] = '\0';
         char* intValue = new char[i + 1]; // Allocate memory for the integer value
         strcpy(intValue, value);
-        //delete[] value;
+        //delete[] intValue;
         return {TokenType::TOKEN_INTEGER, intValue};    } 
         else if ((*current >= 'a' && *current <= 'z') || (*current >= 'A' && *current <= 'Z')) {
         char value[20]; 
@@ -212,6 +211,7 @@ Token getNextToken(char *input, int *pos) {
         value[i] = '\0';
         char* identifierValue = new char[i + 1]; // Allocate memory for the identifier value
         strcpy(identifierValue, value);
+        //delete[] identifierValue;
         return {TokenType::TOKEN_IDENTIFIER, identifierValue};
     }
     return {TokenType::TOKEN_END, nullptr};
@@ -312,6 +312,10 @@ Dictionary parseInput(char* PropertyValueSet, Dictionary* dict) {
             std::cerr << "Error: Maximum number of key-value pairs exceeded\n";
             exit(EXIT_FAILURE);
         }
+        //free memory allocated for the token value 
+        delete[] token.value;
+        delete[] key;
+       
 
         token = getNextToken(nullptr, &pos);
     }
@@ -326,8 +330,8 @@ bool evaluate(Dictionary* kv, ASTNode* root) {
 
     switch (root->type) {
         case TokenType::TOKEN_EQUALS: {
-            char* rootIdnti = root->left->value;
-            char* rootValue = root->right->value;
+            const char* rootIdnti = root->left->value;
+            const char* rootValue = root->right->value;
             for (int i = 0; i < kv->count; i++) {
                 if (strcmp(kv->pairs[i].key, rootIdnti) == 0 && strcmp(kv->pairs[i].value, rootValue) == 0)
                     return true;
@@ -362,17 +366,9 @@ ASTNode* getASTFromCache(const std::string& PropertyFilter) {
 // Function to add AST to cache
 void addToCache(const std::string& PropertyFilter, ASTNode* ast) {
     Cache[PropertyFilter] = ast;
+    //std::cout << "AST added to cache\n", PropertyFilter << std::endl ;
 }
 
-// Free the memory associated with the dictionary
-void freeDict(Dictionary* dict) {
-    for (int i = 0; i < dict->count; ++i) {
-        delete[] dict->pairs[i].key;
-        delete[] dict->pairs[i].value;
-    }
-    // Reset the count to 0
-    dict->count = 0;
-}
 
 
 
@@ -392,19 +388,23 @@ ValidationResult isValid(char* PropertyValueSet, char* PropertyFilter) {
         result.ast = ast;
         addToCache(filterKey, ast);
     }
-    printAST(result.ast, 0);
+    //printAST(result.ast, 0);
     Dictionary dict = {};
     Dictionary kv = parseInput(PropertyValueSet, &dict);
+    //print Kv
+    for (int i = 0; i < kv.count; i++) {
+        std::cout << "Key: " << kv.pairs[i].key << ", Value: " << kv.pairs[i].value << std::endl;
+    }
 
     result.result = evaluate(&kv, result.ast);
     result.kv = kv;
+    std::cout << "resulat inside is valide:"<< result.result << "\n";
 
     // free memmory 
     freeAST(result.ast);
-    //printAST(result.ast, 0);
-   freeDict(&kv);
-   //delete[] result.ast->value;
+ 
 
+    std::cout << "resulat 2 inside is valide:"<< result.result << "\n";
    
     return result;
 }
@@ -418,15 +418,12 @@ ValidationResult isValidUncached(char* PropertyValueSet, char* PropertyFilter) {
     result.result = evaluate(&kv, ast);
     result.ast = ast;
     result.kv = kv;
-
+    //print boolean result 
+    std::cout << "resulat inside is valide:"<< result.result << "\n";
+    
     // free memmory 
      freeAST(result.ast);
-     freeDict(&dict);
-
-    delete[] result.ast->value;
-
     
-
     return result;
 }
 
@@ -436,32 +433,22 @@ void freeAST(ASTNode *root) {
         return;
     }
 
-    // Print the current node before deleting it
-    switch (root->type) {
-        case TokenType::TOKEN_INTEGER:
-            std::cout << "Root value before deleting Integer node: " << root->value << std::endl;
-            break;
-        case TokenType::TOKEN_IDENTIFIER:
-            std::cout << "Root value before deleting Identifier node: " << root->value << std::endl;
-            break;
-        case TokenType::TOKEN_EQUALS:
-            std::cout << "Root value before deleting Equals node:" << root->value<< std::endl;
-            break;
-        case TokenType::TOKEN_AMPERSAND:
-            std::cout << "Root value before deleting Ampersand node:" << root->value<<std::endl;
-            break;
-        case TokenType::TOKEN_VERTICAL_BAR:
-            std::cout << "Root value before deleting Vertical Bar node:" << root->value<< std::endl;
-            break;
-        default:
-           // std::cout << "Root value before deleting Unknown node:" << root->value << std::endl;
-            break;
+     // Check if the node has already been deleted
+    if (root->value == nullptr) {
+        return;
     }
-
+    // Free the left and right children first
     freeAST(root->left);
     freeAST(root->right);
+
+    // Delete the value associated with the current node
+    if (root->type != TokenType::TOKEN_EQUALS && root->type != TokenType::TOKEN_AMPERSAND && root->type != TokenType::TOKEN_VERTICAL_BAR && root->value != nullptr) {
     
-    // Print the current node before deleting it
+            delete[] root->value;
+            root->value = nullptr; // Optional: Set pointer to null after deallocation
+    }
+
+    // Delete the current node
     switch (root->type) {
         case TokenType::TOKEN_INTEGER:
             std::cout << "Deleting Integer node: " << root->value << std::endl;
@@ -483,34 +470,30 @@ void freeAST(ASTNode *root) {
             break;
     }
 
- // Deallocate memory for value field in Token struct if it's not null
-    if (root->value != nullptr) {
-        delete[] root->value;
-        root->value = nullptr; // Optional: Set pointer to null after deallocation
-    }
-
-    // delete[] root->value; // Delete value memory
-     delete root;
+    // Finally, delete the current node itself
+    delete root;
 }
 
 
 
 
 int main() {
-    char PropertyFilter[] = "GGG=3 | pp=4";
-    char PropertyValueSet[] = "GGG=9 : abc=4 : pp=4 : xyz=5";
+     char PropertyFilter[] = "GGG=3 | pp=4";
+    //char PropertyFilter[] = "G=3";
+    char PropertyValueSet[] = "G=9 : pp=4";
+    //char PropertyValueSet[] = "K=3";
 int i;
-    for ( i = 0; i < 1; ++i) {
+    for ( i = 0; i < 2000; ++i) {
         ValidationResult VlidResult = isValid(PropertyValueSet, PropertyFilter);
         std::cout << "Run " << i + 1 << " - Result is: " << VlidResult.result << std::endl;
     }
 
-    // for (int i = 0; i < 1; ++i) {
-    //     ValidationResult VlidResult = isValidUncached(PropertyValueSet, PropertyFilter);
-    //     std::cout << "Run " << i + 1 << " - Result uncached is: " << VlidResult.result << std::endl;
-    // }
+    for (int i = 0; i < 1010; ++i) {
+        ValidationResult VlidResult = isValidUncached(PropertyValueSet, PropertyFilter);
+        std::cout << "Run " << i + 1 << " - Result uncached is: " << VlidResult.result << std::endl;
+    }
 
-    freeASTCache(); 
+    //freeASTCache(); 
 
     return 0;
 }
