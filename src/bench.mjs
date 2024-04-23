@@ -21,7 +21,7 @@ function jsIsValid() {
 
 
 // Create a Bench instance
-const bench = new Bench({ time: 50 });
+const bench = new Bench({ time: 120 });
 bench.add('wasmIsValid', wasmIsValid);
 bench.add('wasmIsValidUncached', wasmIsValidUncached);
 bench.add('jsIsValid', jsIsValid);

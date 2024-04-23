@@ -23,7 +23,7 @@ struct Token {
 // Abstract Syntax Tree Node
 struct ASTNode {
     TokenType type;
-    char* value;
+    const char* value;
     ASTNode *left;
     ASTNode *right;
 };
@@ -47,6 +47,13 @@ struct Dictionary {
     int count;
 };
 
+// Structure to store the result of validation
+struct ValidationResult {
+    bool result;
+    ASTNode* ast;
+    Dictionary kv;
+};
+
 // Function prototypes
 Token getNextToken(const char *input, int *pos);
 Dictionary parseInput(const char* PropertyValueSet, Dictionary* dict);
@@ -56,10 +63,10 @@ ASTNode* parseOrExpression(Token token);
 ASTNode* parseExpression(const char *input);
 bool evaluate(Dictionary* kv, ASTNode* root);
 void printAST(ASTNode *root, int indent);
-// void freeAST(ASTNode *root, Dictionary* dict);
-// void freeDictionary(Dictionary* dict);
 ASTNode* getASTFromCache(const std::string& PropertyFilter);
 void addToCache(const std::string& PropertyFilter, ASTNode* ast);
+void freeAST(ASTNode *root);
+
 
 // Define cache data structure using unordered_map
 std::unordered_map<std::string, ASTNode*> Cache;
@@ -139,7 +146,9 @@ Dictionary parseInput(const char* PropertyValueSet, Dictionary* dict) {
             std::cerr << "Error: Maximum number of key-value pairs exceeded\n";
             exit(EXIT_FAILURE);
         }
-
+        //free memory allocated for the token value 
+        delete[] token.value;
+        delete[] key;
         token = getNextToken(nullptr, &pos);
     }
 
@@ -154,7 +163,7 @@ ASTNode* parseEqualityExpression(Token token) {
         std::cerr << "Error: Invalid input\n";
         exit(EXIT_FAILURE);
     }
-    node_id->value = strdup(token.value); // Save the variable name
+    node_id->value = new char[strlen(token.value) + 1]; // Save the variable name
     token = getNextToken(NULL, NULL); // Get next token
     if (token.type != TOKEN_EQUALS) {
         std::cerr << "Error: Expected '=' after identifier\n";
@@ -162,7 +171,7 @@ ASTNode* parseEqualityExpression(Token token) {
     }
     ASTNode* node_eq = new ASTNode;
     node_eq->type = TOKEN_EQUALS;
-    node_eq->value = strdup(token.value); // Save the '=' token
+    node_eq->value = new char[strlen(token.value) + 1]; // Save the '=' token
     token = getNextToken(NULL, NULL); // Get next token
     if (token.type != TOKEN_INTEGER) {
         std::cerr << "Error: Expected integer value after '='\n";
@@ -171,7 +180,7 @@ ASTNode* parseEqualityExpression(Token token) {
     node_eq->left = node_id;
     node_eq->right = new ASTNode;
     node_eq->right->type = TOKEN_INTEGER;
-    node_eq->right->value = strdup(token.value);
+    node_eq->right->value = new char[strlen(token.value) + 1];
     node_id->left = nullptr;
     node_id->right = nullptr;
     return node_eq;
@@ -222,8 +231,10 @@ ASTNode* parseExpression(const char *input) {
         std::cerr << "Error: Expected identifier before '='\n";
         exit(EXIT_FAILURE);
     }
-    else
-        return parseOrExpression(token);
+    else{
+        ASTNode* result = parseOrExpression(token);
+        return result;
+    }
 }
 
 // Function to print AST (for debugging)
@@ -279,8 +290,8 @@ bool evaluate(Dictionary* kv, ASTNode* root) {
 
     switch (root->type) {
         case TOKEN_EQUALS: {
-            char* rootIdnti = root->left->value;
-            char* rootValue = root->right->value;
+            const char* rootIdnti = root->left->value;
+            const char* rootValue = root->right->value;
             for (int i = 0; i < kv->count; i++) {
                 if (strcmp(kv->pairs[i].key, rootIdnti) == 0 && strcmp(kv->pairs[i].value, rootValue) == 0)
                     return true;
@@ -318,43 +329,89 @@ void addToCache(const std::string& PropertyFilter, ASTNode* ast) {
 }
 
 
+
+
+
+void freeAST(ASTNode *root) {
+    if (root == nullptr) {
+        return;
+    }
+
+     // Check if the node has already been deleted
+    if (root->value == nullptr) {
+        return;
+    }
+    // Free the left and right children first
+    freeAST(root->left);
+    freeAST(root->right);
+
+    // Delete the value associated with the current node
+    if (root->type != TokenType::TOKEN_EQUALS && root->type != TokenType::TOKEN_AMPERSAND && root->type != TokenType::TOKEN_VERTICAL_BAR && root->value != nullptr) {
+    
+            delete[] root->value;
+            root->value = nullptr; // Optional: Set pointer to null after deallocation
+    }
+
+ 
+    // Finally, delete the current node itself
+    delete root;
+}
+
+
 // Function to validate
 bool isValid(std::string propertyValueSet, std::string propertyFilter) {
     const char *pvs = propertyValueSet.c_str();
     const char *pf = propertyFilter.c_str();
-    
+        ValidationResult result; 
+
     // // Check if this property filter is already in cache and skip the parsing
-    // ASTNode* cachedAST;
-    // // cachedAST = getASTFromCache(pf);
+    ASTNode* cachedAST = getASTFromCache(pf);
 
-    // if (cachedAST != nullptr) {
-    //    // std::cout << "AST found in cache\n";
-    //     //result.ast = cachedAST;
-    // }
-    // else {
-       // std::cout << "AST not found in cache\n";
-        // ASTNode* ast = parseExpression(pf);
-        //result.ast = ast;
-        // addToCache(pf, ast);
-    // }
+    if (cachedAST != nullptr) {
+        // std::cout << "AST found in cache\n";
+         result.ast = cachedAST;
+    }
+    else {
+        //std::cout << "AST not found in cache\n";
+        ASTNode* ast = parseExpression(pf);
+         result.ast = ast;
+        addToCache(pf, ast);
+    }
 
-    // Dictionary dict = {0}; // Initialize dictionary
-    // Dictionary kv = parseInput(pvs, &dict);
-    // bool result = evaluate(&kv, cachedAST);
+    Dictionary dict = {0}; // Initialize dictionary
+    Dictionary kv = parseInput(pvs, &dict);
+     result.result = evaluate(&kv, result.ast);
+
+    //Free memory allocated for AST and dictionary
+    freeAST(result.ast);
+
     
-    return 1;
+   return result.result;
+   // return 1;
+
 }
+
 
 bool isValidUncached(std::string propertyValueSet, std::string propertyFilter) {
     const char *pvs = propertyValueSet.c_str();
     const char *pf = propertyFilter.c_str();
-    ASTNode* ast = parseExpression(pf);
-    // Dictionary dict = {0}; // Initialize dictionary
-    // Dictionary kv = parseInput(pvs, &dict);
-    // bool result = evaluate(&kv, ast);
-   
-    return 1;
+        ValidationResult result;
+
+     ASTNode* ast = parseExpression(pf);
+     Dictionary dict = {}; // Initialize dictionary
+     Dictionary kv = parseInput(pvs, &dict);
+
+      result.result = evaluate(&kv, ast);
+      result.ast = ast;
+      result.kv = kv;
+
+//     // Alternatively, you can manually free memory for AST nodes
+    freeAST(result.ast);
+    return result.result;
+    //return 1;
+
 }
+
 
 
 
