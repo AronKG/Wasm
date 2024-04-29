@@ -8,6 +8,7 @@
   },
   "scripts": {
     "compile": "emcc src/pf-wasm.cpp -o src/pf-wasm.js -s WASM_ASYNC_COMPILATION=0 -std=c++11 --bind",
+    "compile-noop": "emcc src/noop.cpp -o src/noop.js -s WASM_ASYNC_COMPILATION=0 -std=c++11 --bind",
     "start": "node --experimental-wasm-modules src/bench.mjs"
   }
 }

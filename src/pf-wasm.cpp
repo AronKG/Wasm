@@ -32,8 +32,8 @@ struct ASTNode {
 // ASTNode* Cache[1000];
 // int cacheIndex = 0;
 
-#define MAX_PAIRS 10  // Maximum number of key-value pairs 
-#define MAX_LENGTH 20 // Maximum length of key or value
+#define MAX_PAIRS 100  // Maximum number of key-value pairs 
+#define MAX_LENGTH 100 // Maximum length of key or value
 
 // Structure to store key-value pairs
 struct KeyValuePair {
@@ -63,6 +63,7 @@ ASTNode* parseOrExpression(Token token);
 ASTNode* parseExpression(const char *input);
 bool evaluate(Dictionary* kv, ASTNode* root);
 void printAST(ASTNode *root, int indent);
+//void freeAST(ASTNode *root, Dictionary* dict);
 ASTNode* getASTFromCache(const std::string& PropertyFilter);
 void addToCache(const std::string& PropertyFilter, ASTNode* ast);
 void freeAST(ASTNode *root);
@@ -404,9 +405,12 @@ bool isValidUncached(std::string propertyValueSet, std::string propertyFilter) {
       result.result = evaluate(&kv, ast);
       result.ast = ast;
       result.kv = kv;
+//        //Free memory allocated for AST and dictionary
+//    // freeAST(ast, nullptr); // Uncomment if you implement a function to free AST nodes
+//    // freeDictionary(&dict); // Uncomment if you implement a function to free the dictionary
 
 //     // Alternatively, you can manually free memory for AST nodes
-    freeAST(result.ast);
+    freeAST(ast);
     return result.result;
     //return 1;
 
