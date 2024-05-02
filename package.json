@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@promaster-sdk/property": "^7.0.0",
+    "emscripten": "^0.0.2-beta",
     "wasi_snapshot_preview1": "^0.0.0-dev"
   },
   "devDependencies": {
@@ -8,7 +9,9 @@
   },
   "scripts": {
     "compile": "emcc src/pf-wasm.cpp -o src/pf-wasm.js -s WASM_ASYNC_COMPILATION=0 -std=c++11 --bind",
-    "compile-noop": "emcc src/noop.cpp -o src/noop.js -s WASM_ASYNC_COMPILATION=0 -std=c++11 --bind",
-    "start": "node --experimental-wasm-modules src/bench.mjs"
+    "compile-noop": "emcc src/noop.cpp -o src/noop.js -s WASM_ASYNC_COMPILATION=0 -std=c++11 --bind -s 'EXPORTED_RUNTIME_METHODS=[\"cwrap\"]'",
+    "start": "node --experimental-wasm-modules src/bench.mjs",
+    "compile-array": "emcc test/testArray.cpp -o test/my_array.js -s WASM_ASYNC_COMPILATION=0 -std=c++11 --bind -s 'EXPORTED_RUNTIME_METHODS=[\"cwrap\"]'",
+    "start-array": "node --experimental-wasm-modules test/arr.mjs"
   }
 }
