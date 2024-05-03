@@ -361,33 +361,33 @@ void freeAST(ASTNode *root) {
 
 // Function to validate
 bool isValid(std::string propertyValueSet, std::string propertyFilter) {
-//     const char *pvs = propertyValueSet.c_str();
-//     const char *pf = propertyFilter.c_str();
-//         ValidationResult result; 
+    const char *pvs = propertyValueSet.c_str();
+    const char *pf = propertyFilter.c_str();
+        ValidationResult result; 
 
-//     // // Check if this property filter is already in cache and skip the parsing
-//     ASTNode* cachedAST = getASTFromCache(pf);
+    // // Check if this property filter is already in cache and skip the parsing
+    ASTNode* cachedAST = getASTFromCache(pf);
 
-//     if (cachedAST != nullptr) {
-//         // std::cout << "AST found in cache\n";
-//          result.ast = cachedAST;
-//     }
-//     else {
-//         //std::cout << "AST not found in cache\n";
-//         ASTNode* ast = parseExpression(pf);
-//          result.ast = ast;
-//         addToCache(pf, ast);
-//     }
+    if (cachedAST != nullptr) {
+        // std::cout << "AST found in cache\n";
+         result.ast = cachedAST;
+    }
+    else {
+        //std::cout << "AST not found in cache\n";
+        ASTNode* ast = parseExpression(pf);
+         result.ast = ast;
+        addToCache(pf, ast);
+    }
 
-//     Dictionary dict = {0}; // Initialize dictionary
-//     Dictionary kv = parseInput(pvs, &dict);
-//      result.result = evaluate(&kv, result.ast);
+    Dictionary dict = {0}; // Initialize dictionary
+    Dictionary kv = parseInput(pvs, &dict);
+     result.result = evaluate(&kv, result.ast);
 
-//     //Free memory allocated for AST and dictionary
-//     freeAST(result.ast);
+    //Free memory allocated for AST and dictionary
+    freeAST(result.ast);
 
     
-//    return result.result;
+   return result.result;
    return 1;
 
 }

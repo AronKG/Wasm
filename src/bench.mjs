@@ -17,6 +17,8 @@ function allocateMemory(data) {
         // Get data byte size, allocate memory on Emscripten heap, and get pointer
         const nDataBytes = data.length * data.BYTES_PER_ELEMENT;
         dataPtr = NoopWasm._malloc(nDataBytes);
+         dataHeap = new Uint8Array(NoopWasm.HEAPU8.buffer, dataPtr, nDataBytes);// Copy data to Emscripten heap (directly accessed from Module.HEAPU8)
+
     }
 }
 
@@ -28,14 +30,13 @@ function pointer_to_array() {
 
   // Get data byte size, allocate memory on Emscripten heap, and get pointer
   const nDataBytes = data.length * data.BYTES_PER_ELEMENT; 
-  const dataHeap = new Uint8Array(NoopWasm.HEAPU8.buffer, dataPtr, nDataBytes);// Copy data to Emscripten heap (directly accessed from Module.HEAPU8)
-  dataHeap.set(new Uint8Array(data.buffer));
+  //dataHeap.set(new Uint8Array(data.buffer));
 
     // Call function and get result
     float_multiply_array(2, dataHeap.byteOffset, 5); // Assuming 5 elements in the array
-    const result = new Uint8Array(dataHeap.buffer, dataHeap.byteOffset, 5); // Assuming 5 elements in the array
+   // const result = new Uint8Array(dataHeap.buffer, dataHeap.byteOffset, 5); // Assuming 5 elements in the array
 
-    return result;
+    return 0;
 }
 
 // Call web assembly version of isVvalid()
